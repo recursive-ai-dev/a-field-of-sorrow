@@ -1,0 +1,32 @@
+export const CONFIG = {
+  field: 90,
+  survivorCount: 14,
+  scoutCount: 4,
+  gameTime: 150,
+  playerSpeed: 22,
+  scoutSpeed: 9,
+  wardCooldown: 6,
+  healCooldown: 4,
+  wardDuration: 9,
+  healDuration: 2.5,
+  wardRadius: 12,
+  healRadius: 9,
+  survivorDecay: 0.012,
+  scoutDrain: 0.09,
+  scoutDrainRange: 16,
+  wardProtectionFactor: 0.05,
+  healAmount: 0.45,
+  rescueThreshold: 0.9,
+  scoutHuntRange: 45,
+  scoutDamageRange: 6,
+  scoutDamage: 0.12,
+  playerRegen: 0.01,
+  winRatio: 0.5,
+  winMorale: 60,
+} as const;
+
+export const NAMES = [
+  "Aldric", "Brienne", "Cael", "Dorne", "Elowen", "Fenwick",
+  "Greta", "Halvard", "Isolde", "Joran", "Kestrel", "Lyra",
+  "Maren", "Nyx", "Orin", "Perrin", "Quenby", "Rolf",
+];

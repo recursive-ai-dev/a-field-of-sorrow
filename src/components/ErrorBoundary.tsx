@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           >
             Reload Game
           </button>
-          {process.env.NODE_ENV === "development" && this.state.errorInfo && (
+          {import.meta.env.DEV && this.state.errorInfo && (
             <details className="mt-4 p-4 bg-gray-800 rounded-lg max-w-md overflow-auto max-h-60">
               <summary className="font-semibold cursor-pointer">Technical Details</summary>
               <pre className="text-xs text-gray-300 mt-2 whitespace-pre-wrap">

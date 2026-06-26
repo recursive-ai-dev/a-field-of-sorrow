@@ -1,9 +1,10 @@
 export class PerformanceMonitor {
   private frameTimes: number[] = [];
   private maxFrameTimes: number = 60;
-  private lastFpsUpdate: number = 0;
-  private fpsUpdateInterval: number = 1000; // Update FPS every second
-  
+  private lastFrameTime: number = 0;
+  private lastStatsUpdate: number = 0;
+  private statsUpdateInterval: number = 1000;
+
   private stats: {
     fps: number;
     avgFrameTime: number;
@@ -15,38 +16,36 @@ export class PerformanceMonitor {
     avgFrameTime: 0,
     minFrameTime: Infinity,
     maxFrameTime: 0,
-    frameTimeVariance: 0
+    frameTimeVariance: 0,
   };
 
   constructor() {
     this.reset();
   }
 
-  startFrame(): void {
-    // This would be called at the start of each frame
-    // For now, we'll just track frame times
-  }
-
-  endFrame(): void {
-    // This would be called at the end of each frame
-    // For now, we'll just track frame times
-  }
-
   addFrameTime(frameTime: number): void {
-    const now = performance.now();
-    
-    // Add frame time to our buffer
-    this.frameTimes.push(frameTime);
-    
-    // Keep buffer size manageable
+    // frameTime is a timestamp from performance.now() on each frame call;
+    // compute the delta from the last call to get the true frame duration.
+    if (this.lastFrameTime === 0) {
+      this.lastFrameTime = frameTime;
+      return;
+    }
+
+    const delta = frameTime - this.lastFrameTime;
+    this.lastFrameTime = frameTime;
+
+    // Guard against abnormal gaps (tab hidden, pause, etc.)
+    if (delta <= 0 || delta > 500) return;
+
+    this.frameTimes.push(delta);
+
     if (this.frameTimes.length > this.maxFrameTimes) {
       this.frameTimes.shift();
     }
-    
-    // Update stats periodically
-    if (now - this.lastFpsUpdate >= this.fpsUpdateInterval) {
+
+    if (frameTime - this.lastStatsUpdate >= this.statsUpdateInterval) {
       this.updateStats();
-      this.lastFpsUpdate = now;
+      this.lastStatsUpdate = frameTime;
     }
   }
 
@@ -104,7 +103,8 @@ export class PerformanceMonitor {
       maxFrameTime: 0,
       frameTimeVariance: 0
     };
-    this.lastFpsUpdate = performance.now();
+    this.lastFrameTime = 0;
+    this.lastStatsUpdate = performance.now();
   }
 
   static createPerformanceReport(): string {
@@ -112,21 +112,22 @@ export class PerformanceMonitor {
       return "Performance API not available";
     }
     
-    const memory = performance.memory;
+    const mem = (performance as unknown as Record<string, unknown>).memory as Record<string, number> | undefined;
     const report: string[] = [];
     
     report.push(`=== Performance Report ===`);
     report.push(`Timestamp: ${new Date().toISOString()}`);
     
-    if (memory) {
+    if (mem) {
       report.push(`Memory Usage:`);
-      report.push(`  JS Heap Size: ${(memory.jsHeapSizeLimit / 1048576).toFixed(2)} MB`);
-      report.push(`  Used Heap Size: ${(memory.usedJSHeapSize / 1048576).toFixed(2)} MB`);
-      report.push(`  Total Heap Size: ${(memory.totalJSHeapSize / 1048576).toFixed(2)} MB`);
+      report.push(`  JS Heap Size: ${(mem.jsHeapSizeLimit / 1048576).toFixed(2)} MB`);
+      report.push(`  Used Heap Size: ${(mem.usedJSHeapSize / 1048576).toFixed(2)} MB`);
+      report.push(`  Total Heap Size: ${(mem.totalJSHeapSize / 1048576).toFixed(2)} MB`);
     }
     
-    if (navigator.deviceMemory) {
-      report.push(`Device Memory: ${navigator.deviceMemory} GB`);
+    const deviceMemory = (navigator as unknown as Record<string, unknown>).deviceMemory as number | undefined;
+    if (deviceMemory) {
+      report.push(`Device Memory: ${deviceMemory} GB`);
     }
     
     if (navigator.hardwareConcurrency) {

@@ -13,7 +13,7 @@ export const wardFragment = /* glsl */ `
   precision highp float;
   varying vec2 vUv;
   uniform float uTime;
-  uniform float uProgress; // 0 -> spawning, 1 -> fully active, then fades
+  uniform float uProgress;
   uniform vec3  uColor;
   uniform vec3  uColor2;
   uniform float uIntensity;
@@ -24,21 +24,14 @@ export const wardFragment = /* glsl */ `
 
   void main() {
     vec2 p = vUv - 0.5;
-    float d = length(p) * 2.0; // 0 center -> 1 edge
+    float d = length(p) * 2.0;
     float ang = atan(p.y, p.x);
 
-    // expanding burst on spawn
     float burst = smoothstep(uProgress, uProgress - 0.15, d);
-
-    // pulsing inner glow
     float pulse = 0.5 + 0.5 * sin(uTime * 3.0);
     float core = smoothstep(0.55, 0.0, d) * (0.35 + 0.4 * pulse);
-
-    // animated outer ring
     float outer = ring(d, 0.86, 0.05) * (0.8 + 0.2 * pulse);
     float mid   = ring(d, 0.62 + 0.03 * sin(uTime * 2.0), 0.025);
-
-    // rotating rune ticks around the rim
     float ticks = abs(sin(ang * 12.0 + uTime * 1.5));
     ticks = smoothstep(0.85, 1.0, ticks) * ring(d, 0.78, 0.06);
 
@@ -49,7 +42,6 @@ export const wardFragment = /* glsl */ `
     col += uColor2 * ticks * 1.5;
 
     float alpha = clamp(glyph, 0.0, 1.0) * uIntensity;
-    // soft fade at very edge
     alpha *= smoothstep(1.02, 0.95, d);
 
     if (alpha < 0.01) discard;
@@ -57,7 +49,6 @@ export const wardFragment = /* glsl */ `
   }
 `;
 
-// Ground fog patch — drifting alpha noise, fades in/out
 export const fogVertex = wardVertex;
 
 export const fogFragment = /* glsl */ `
@@ -67,7 +58,6 @@ export const fogFragment = /* glsl */ `
   uniform vec3  uColor;
   uniform float uOpacity;
 
-  // cheap value noise
   float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float noise(vec2 p){
     vec2 i = floor(p); vec2 f = fract(p);
@@ -95,3 +85,34 @@ export const fogFragment = /* glsl */ `
     gl_FragColor = vec4(uColor, a);
   }
 `;
+
+import * as THREE from "three";
+
+export const VignetteShader = {
+  uniforms: {
+    tDiffuse: { value: null as THREE.Texture | null },
+    uDanger: { value: 0 },
+    uTime: { value: 0 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uDanger;
+    uniform float uTime;
+    varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      float d = distance(vUv, vec2(0.5));
+      float vig = smoothstep(0.85, 0.25, d);
+      c.rgb *= mix(0.45, 1.0, vig);
+      c.r *= 1.06; c.g *= 1.0; c.b *= 0.9;
+      float pulse = 0.5 + 0.5 * sin(uTime * 6.0);
+      float edge = smoothstep(0.35, 0.75, d);
+      c.rgb = mix(c.rgb, vec3(0.5, 0.05, 0.04), edge * uDanger * (0.4 + 0.3 * pulse));
+      gl_FragColor = c;
+    }
+  `,
+};
