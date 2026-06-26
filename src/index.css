@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #0c0a09;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Screen reader only utilities */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visible for keyboard navigation */
+.js-focus-visible :focus:not([data-focus-visible-added]) {
+  outline: none;
+  box-shadow: none;
+}
+
+.js-focus-visible [data-focus-visible-added] {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+canvas {
+  display: block;
+}
