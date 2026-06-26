@@ -151,12 +151,11 @@ function SpellButton({
       <span className="pointer-events-none absolute -top-7 whitespace-nowrap rounded bg-black/80 px-2 py-0.5 text-[10px] text-amber-100 opacity-0 transition-opacity group-hover:opacity-100">
         {label} <span className="text-stone-400">[{hint}]</span>
       </span>
-    </button>
-    {ariaLabel && keyBinding && (
-      <span className="sr-only">
-        {ariaLabel}. Keyboard shortcut: {keyBinding} key.
-      </span>
-    )}
+      {ariaLabel && keyBinding && (
+        <span className="sr-only">
+          {ariaLabel}. Keyboard shortcut: {keyBinding} key.
+        </span>
+      )}
     </button>
   );
 }
