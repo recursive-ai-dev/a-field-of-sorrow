@@ -100,7 +100,7 @@ export class Game {
   private composer!: EffectComposer;
   private bloom!: UnrealBloomPass;
   private vignette!: ShaderPass;
-  private clock = new THREE.Clock();
+  private timer = new THREE.Timer();
   private raf = 0;
 
   private player!: THREE.Group;
@@ -171,7 +171,7 @@ export class Game {
     this.renderer.setSize(w, h);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
@@ -196,7 +196,7 @@ export class Game {
     this.buildPost();
 
     this.addListeners();
-    this.clock.start();
+
     this.loop();
   }
 
@@ -809,8 +809,8 @@ export class Game {
       // Start performance monitoring
       const frameStart = performance.now();
 
-      const dt = Math.min(this.clock.getDelta(), 0.05);
-      const t = this.clock.elapsedTime;
+      const dt = Math.min(this.timer.getDelta(), 0.05);
+      const t = this.timer.getElapsed();
 
       if (this.status === "playing") this.update(dt);
       this.updateVisuals(dt, t);
@@ -1170,9 +1170,11 @@ export class Game {
       for (const survivor of this.survivors) {
         this.scene.remove(survivor.mesh);
         survivor.mesh.traverse((obj) => {
-          if (obj instanceof THREE.Mesh) {
+          if (obj && obj instanceof THREE.Mesh) {
             obj.geometry.dispose();
-            (obj.material as THREE.Material).dispose();
+            if (obj.material) {
+              (obj.material as THREE.Material).dispose();
+            }
           }
         });
         survivor.light.dispose();
@@ -1183,9 +1185,11 @@ export class Game {
       for (const scout of this.scouts) {
         this.scene.remove(scout.group);
         scout.group.traverse((obj) => {
-          if (obj instanceof THREE.Mesh) {
+          if (obj && obj instanceof THREE.Mesh) {
             obj.geometry.dispose();
-            (obj.material as THREE.Material).dispose();
+            if (obj.material) {
+              (obj.material as THREE.Material).dispose();
+            }
           }
         });
         scout.light.dispose();
@@ -1196,9 +1200,11 @@ export class Game {
       if (this.player) {
         this.scene.remove(this.player);
         this.player.traverse((obj) => {
-          if (obj instanceof THREE.Mesh) {
+          if (obj && obj instanceof THREE.Mesh) {
             obj.geometry.dispose();
-            (obj.material as THREE.Material).dispose();
+            if (obj.material) {
+              (obj.material as THREE.Material).dispose();
+            }
           }
         });
         this.playerLight.dispose();
@@ -1207,7 +1213,7 @@ export class Game {
       // Dispose of composer passes
       if (this.composer) {
         this.composer.passes.forEach((pass) => {
-          if (pass instanceof THREE.ShaderPass) {
+          if (pass && pass instanceof THREE.ShaderPass) {
             pass.material?.dispose();
           }
         });
@@ -1217,10 +1223,10 @@ export class Game {
       while (this.scene.children.length > 0) {
         const obj = this.scene.children[0];
         this.scene.remove(obj);
-        if (obj instanceof THREE.Mesh) {
+        if (obj && obj instanceof THREE.Mesh) {
           obj.geometry.dispose();
           if (Array.isArray(obj.material)) {
-            obj.material.forEach((mat) => mat.dispose());
+            obj.material.forEach((mat) => mat?.dispose());
           } else {
             obj.material?.dispose();
           }
