@@ -1213,7 +1213,7 @@ export class Game {
       // Dispose of composer passes
       if (this.composer) {
         this.composer.passes.forEach((pass) => {
-          if (pass && pass instanceof THREE.ShaderPass) {
+          if (pass && pass.material) {
             pass.material?.dispose();
           }
         });
