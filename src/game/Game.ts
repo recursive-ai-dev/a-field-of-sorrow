@@ -196,7 +196,6 @@ export class Game {
     this.buildPost();
 
     this.addListeners();
-
     this.loop();
   }
 
@@ -806,6 +805,12 @@ export class Game {
     try {
       this.raf = requestAnimationFrame(this.loop);
       
+      // Debug: Check if we're actually rendering
+      if (this.status === "playing" && !this.renderer.domElement.parentNode) {
+        console.warn("Renderer not attached to DOM!");
+        this.container.appendChild(this.renderer.domElement);
+      }
+      
       // Start performance monitoring
       const frameStart = performance.now();
 
@@ -815,6 +820,7 @@ export class Game {
       if (this.status === "playing") this.update(dt);
       this.updateVisuals(dt, t);
 
+      // Render through composer (post-processing)
       this.composer.render();
       this.emitState();
 

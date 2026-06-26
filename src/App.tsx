@@ -27,6 +27,10 @@ export default function App() {
   const gameRef = useRef<Game | null>(null);
   const [phase, setPhase] = useState<"menu" | "playing" | "ended">("menu");
   const [state, setState] = useState<GameState>(INITIAL);
+  const stateRef = useRef(state);
+  const phaseRef = useRef(phase);
+  stateRef.current = state;
+  phaseRef.current = phase;
 
   const startGame = useCallback(() => {
     if (!mountRef.current) return;
@@ -48,18 +52,6 @@ export default function App() {
     setState(INITIAL);
     setPhase("menu");
   }, []);
-
-  const saveGame = useCallback(() => {
-    try {
-      const saveData = GameSerializer.serialize(state);
-      localStorage.setItem("wardOfTheFallenField_save", saveData);
-      setState(prev => ({ ...prev, message: "Game saved!" }));
-      console.log("Game saved successfully");
-    } catch (error) {
-      console.error("Failed to save game:", error);
-      setState(prev => ({ ...prev, message: "Failed to save game" }));
-    }
-  }, [state]);
 
   const loadGame = useCallback(() => {
     try {
@@ -100,21 +92,30 @@ export default function App() {
     }
   }, []);
 
-  const autoSave = useCallback(() => {
-    if (phase === "playing" && state.status === "playing") {
-      saveGame();
-    }
-  }, [phase, state.status, saveGame]);
-
-  // Auto-save every 30 seconds
+  // Auto-save every 30 seconds (stable interval, uses refs for current state/phase)
   useEffect(() => {
-    const autoSaveInterval = setInterval(autoSave, 30000);
+    const id = setInterval(() => {
+      if (phaseRef.current === "playing" && stateRef.current.status === "playing") {
+        try {
+          const saveData = GameSerializer.serialize(stateRef.current);
+          localStorage.setItem("wardOfTheFallenField_save", saveData);
+          setState(prev => ({ ...prev, message: "Game saved!" }));
+          console.log("Game saved successfully");
+        } catch (error) {
+          console.error("Failed to save game:", error);
+        }
+      }
+    }, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Dispose game on unmount only
+  useEffect(() => {
     return () => {
-      clearInterval(autoSaveInterval);
       gameRef.current?.dispose();
       gameRef.current = null;
     };
-  }, [autoSave]);
+  }, []);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-stone-950">
