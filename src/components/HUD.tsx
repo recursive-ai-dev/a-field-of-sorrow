@@ -7,16 +7,22 @@ interface Props {
 }
 
 function Bar({ value, color, label }: { value: number; color: string; label: string }) {
+  const safeValue = Math.max(0, Math.min(1, value));
   return (
     <div className="w-full">
       <div className="mb-0.5 flex justify-between text-[10px] uppercase tracking-widest text-amber-200/70">
         <span>{label}</span>
-        <span>{Math.round(value * 100)}%</span>
+        <span>{Math.round(safeValue * 100)}%</span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/50 ring-1 ring-amber-900/40">
         <div
-          className="h-full rounded-full transition-[width] duration-200"
-          style={{ width: `${value * 100}%`, background: color }}
+          className="h-full rounded-full transition-[width] duration-300 ease-out"
+          style={{ width: `${safeValue * 100}%`, background: color }}
+          role="progressbar"
+          aria-valuenow={Math.round(safeValue * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={label}
         />
       </div>
     </div>
@@ -33,11 +39,11 @@ export default function HUD({ state, onCastWard, onCastHeal }: Props) {
         </h1>
         <div className="mb-2 flex items-center justify-between text-xs text-stone-300">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" aria-hidden="true" />
             Saved <b className="text-emerald-300">{state.saved}</b>
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]" />
+            <span className="inline-block h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]" aria-hidden="true" />
             Lost <b className="text-red-300">{state.lost}</b>
           </span>
           <span className="text-stone-400">/ {state.total}</span>
@@ -51,14 +57,22 @@ export default function HUD({ state, onCastWard, onCastHeal }: Props) {
       {/* Top-right: timer */}
       <div className="absolute right-4 top-4 rounded-lg border border-amber-800/40 bg-stone-950/70 px-4 py-2 text-center backdrop-blur-sm">
         <div className="text-[10px] uppercase tracking-widest text-amber-200/60">Dusk falls in</div>
-        <div className={`text-2xl font-bold tabular-nums ${state.timeLeft < 30 ? "text-red-400 animate-pulse" : "text-amber-200"}`}>
+        <div
+          className={`text-2xl font-bold tabular-nums ${state.timeLeft < 30 ? "text-red-400 animate-pulse" : "text-amber-200"}`}
+          aria-live="polite"
+          aria-label={`Time remaining: ${Math.floor(state.timeLeft / 60)} minutes and ${state.timeLeft % 60} seconds`}
+        >
           {Math.floor(state.timeLeft / 60)}:{String(state.timeLeft % 60).padStart(2, "0")}
         </div>
       </div>
 
       {/* Center toast message */}
       {state.message && (
-        <div className="absolute left-1/2 top-20 -translate-x-1/2 rounded-md border border-amber-700/40 bg-stone-950/80 px-5 py-2 text-center text-sm italic text-amber-100 shadow-lg backdrop-blur-sm">
+        <div
+          className="absolute left-1/2 top-20 -translate-x-1/2 rounded-md border border-amber-700/40 bg-stone-950/80 px-5 py-2 text-center text-sm italic text-amber-100 shadow-lg backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+        >
           {state.message}
         </div>
       )}
@@ -123,18 +137,19 @@ function SpellButton({
     <button
       onClick={onClick}
       disabled={!ready}
-      className={`group relative flex h-16 w-16 flex-col items-center justify-center rounded-full border-2 transition-all ${
+      className={`group relative flex h-16 w-16 flex-col items-center justify-center rounded-full border-2 transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
         ready
           ? "scale-100 cursor-pointer border-amber-300/70 bg-stone-900/80 hover:scale-110"
           : "scale-95 cursor-not-allowed border-stone-700/50 bg-stone-950/70"
       }`}
       style={ready ? { boxShadow: `0 0 18px ${glow}99` } : undefined}
+      aria-label={`${label} (${hint})`}
     >
-      <span className="text-2xl" style={{ filter: ready ? `drop-shadow(0 0 5px ${glow})` : "grayscale(1) opacity(0.5)" }}>
+      <span className="text-2xl" style={{ filter: ready ? `drop-shadow(0 0 5px ${glow})` : "grayscale(1) opacity(0.5)" }} aria-hidden="true">
         {icon}
       </span>
       {!ready && (
-        <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 36 36">
+        <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
           <circle cx="18" cy="18" r="16" fill="none" stroke="#000" strokeOpacity="0.4" strokeWidth="3" />
           <circle
             cx="18"
@@ -145,6 +160,7 @@ function SpellButton({
             strokeWidth="3"
             strokeDasharray={`${progress * 100.5} 100.5`}
             strokeLinecap="round"
+            className="transition-[stroke-dasharray] duration-300"
           />
         </svg>
       )}

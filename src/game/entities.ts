@@ -1,37 +1,7 @@
 import * as THREE from "three";
 import { terrainHeight } from "./scene";
 import { CONFIG, NAMES } from "./config";
-
-export interface Survivor {
-  mesh: THREE.Group;
-  pos: THREE.Vector3;
-  life: number;
-  rescued: boolean;
-  dead: boolean;
-  ward: Ward | null;
-  name: string;
-  cryT: number;
-  light: THREE.PointLight;
-  bodyMat: THREE.MeshStandardMaterial;
-}
-
-export interface Scout {
-  group: THREE.Group;
-  pos: THREE.Vector3;
-  vel: THREE.Vector3;
-  waypoint: THREE.Vector3;
-  light: THREE.PointLight;
-}
-
-export interface Ward {
-  mesh: THREE.Mesh;
-  mat: THREE.ShaderMaterial;
-  age: number;
-  ttl: number;
-  radius: number;
-  protect: boolean;
-  active: boolean;
-}
+import type { Survivor, Scout, Ward } from "./types";
 
 export function buildSurvivors(scene: THREE.Scene): Survivor[] {
   const survivors: Survivor[] = [];

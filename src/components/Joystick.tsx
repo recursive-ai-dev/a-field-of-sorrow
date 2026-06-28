@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from "react";
 
 interface JoystickProps {
-  onMove: (dx: number, dy: number) => void;
+  onMove: (v: { x: number; y: number } | null) => void;
   size?: number;
 }
 
@@ -41,7 +41,7 @@ export function Joystick({ onMove, size = 120 }: JoystickProps) {
         dy /= len;
       }
       setKnobPos({ x: dx * half, y: dy * half });
-      onMove(dx, dy);
+      onMove({ x: dx, y: dy });
     },
     [size, onMove],
   );
@@ -49,25 +49,25 @@ export function Joystick({ onMove, size = 120 }: JoystickProps) {
   const handleEnd = useCallback(() => {
     setDragging(false);
     setKnobPos({ x: 0, y: 0 });
-    onMove(0, 0);
+    onMove(null);
     touchId.current = null;
   }, [onMove]);
 
   useEffect(() => {
     if (!dragging) return;
-    const onMove = (e: TouchEvent | MouseEvent) => {
+    const onMoveHandler = (e: TouchEvent | MouseEvent) => {
       const ev = "touches" in e ? e.touches[0] ?? e.changedTouches[0] : (e as MouseEvent);
       if (ev) updateKnob(ev.clientX, ev.clientY);
     };
     const onUp = () => handleEnd();
-    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mousemove", onMoveHandler);
     window.addEventListener("mouseup", onUp);
-    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchmove", onMoveHandler, { passive: true });
     window.addEventListener("touchend", onUp);
     return () => {
-      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mousemove", onMoveHandler);
       window.removeEventListener("mouseup", onUp);
-      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchmove", onMoveHandler);
       window.removeEventListener("touchend", onUp);
     };
   }, [dragging, updateKnob, handleEnd]);
@@ -87,7 +87,9 @@ export function Joystick({ onMove, size = 120 }: JoystickProps) {
       }}
       role="slider"
       aria-label="Movement joystick"
-      aria-orientation="vertical"
+      aria-valuemin={-1}
+      aria-valuemax={1}
+      aria-valuenow={0}
     >
       {/* Base circle */}
       <div className="absolute inset-0 rounded-full border-2 border-stone-600/40 bg-stone-950/60 backdrop-blur-sm" />

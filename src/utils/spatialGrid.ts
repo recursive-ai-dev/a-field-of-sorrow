@@ -4,36 +4,42 @@ export class SpatialGrid<T extends { pos: THREE.Vector3 }> {
   private cellSize: number;
   private grid: Map<string, T[]> = new Map();
   private items: T[] = [];
+  private itemToCell: Map<T, string> = new Map();
 
   constructor(private bounds: { min: THREE.Vector3; max: THREE.Vector3 }, cellSize: number = 20) {
     this.cellSize = cellSize;
   }
 
   add(item: T): void {
+    if (this.items.includes(item)) return;
     this.items.push(item);
     this.updateItem(item);
   }
 
   updateItem(item: T): void {
-    const key = this.getCellKey(item.pos);
-    if (!this.grid.has(key)) {
-      this.grid.set(key, []);
-    }
-    
-    // Remove from previous cell (if any)
-    for (const [cellKey, cellItems] of this.grid) {
-      const index = cellItems.indexOf(item);
-      if (index !== -1) {
-        cellItems.splice(index, 1);
-        if (cellItems.length === 0) {
-          this.grid.delete(cellKey);
+    const newKey = this.getCellKey(item.pos);
+    const oldKey = this.itemToCell.get(item);
+
+    if (oldKey === newKey) return;
+
+    if (oldKey !== undefined) {
+      const cellItems = this.grid.get(oldKey);
+      if (cellItems) {
+        const index = cellItems.indexOf(item);
+        if (index !== -1) {
+          cellItems.splice(index, 1);
+          if (cellItems.length === 0) {
+            this.grid.delete(oldKey);
+          }
         }
-        break;
       }
     }
-    
-    // Add to new cell
-    this.grid.get(key)?.push(item);
+
+    if (!this.grid.has(newKey)) {
+      this.grid.set(newKey, []);
+    }
+    this.grid.get(newKey)!.push(item);
+    this.itemToCell.set(item, newKey);
   }
 
   remove(item: T): void {
@@ -41,29 +47,34 @@ export class SpatialGrid<T extends { pos: THREE.Vector3 }> {
     if (index !== -1) {
       this.items.splice(index, 1);
     }
-    
-    for (const [cellKey, cellItems] of this.grid) {
-      const index = cellItems.indexOf(item);
-      if (index !== -1) {
-        cellItems.splice(index, 1);
-        if (cellItems.length === 0) {
-          this.grid.delete(cellKey);
+
+    const key = this.itemToCell.get(item);
+    if (key !== undefined) {
+      const cellItems = this.grid.get(key);
+      if (cellItems) {
+        const index = cellItems.indexOf(item);
+        if (index !== -1) {
+          cellItems.splice(index, 1);
+          if (cellItems.length === 0) {
+            this.grid.delete(key);
+          }
         }
-        break;
       }
+      this.itemToCell.delete(item);
     }
   }
 
   clear(): void {
     this.grid.clear();
     this.items = [];
+    this.itemToCell.clear();
   }
 
   queryNearby(position: THREE.Vector3, radius: number): T[] {
     const result: T[] = [];
     const minCell = this.getCellCoordinates(position.clone().subScalar(radius));
     const maxCell = this.getCellCoordinates(position.clone().addScalar(radius));
-    
+
     for (let x = minCell.x; x <= maxCell.x; x++) {
       for (let z = minCell.z; z <= maxCell.z; z++) {
         const key = this.getCellKeyFromCoords(x, z);
@@ -73,7 +84,7 @@ export class SpatialGrid<T extends { pos: THREE.Vector3 }> {
         }
       }
     }
-    
+
     return result;
   }
 

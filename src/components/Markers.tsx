@@ -23,16 +23,22 @@ export default function Markers({ state }: { state: GameState }) {
               {/* mini life bar */}
               <div className="mt-1 h-1 w-12 overflow-hidden rounded-full bg-black/60">
                 <div
-                  className="h-full transition-[width]"
+                  className="h-full transition-[width] duration-300 ease-out"
                   style={{
-                    width: `${s.life * 100}%`,
+                    width: `${Math.max(0, Math.min(1, s.life)) * 100}%`,
                     background: s.life < 0.3 ? "#ef4444" : s.life < 0.6 ? "#f59e0b" : "#34d399",
                   }}
+                  role="progressbar"
+                  aria-valuenow={Math.round(s.life * 100)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${s.name} health`}
                 />
               </div>
               <div
                 className={`mt-0.5 text-lg leading-none ${s.critical ? "animate-bounce" : ""}`}
                 style={{ filter: "drop-shadow(0 0 4px #fbbf24)" }}
+                aria-hidden="true"
               >
                 ▾
               </div>
@@ -48,7 +54,7 @@ export default function Markers({ state }: { state: GameState }) {
             className="absolute -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-100 ease-linear"
             style={{ left: `${sc.x * 100}%`, top: `${sc.y * 100}%` }}
           >
-            <div className="rounded border border-red-500/60 bg-red-950/50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-red-300 backdrop-blur-sm">
+            <div className="rounded border border-red-500/60 bg-red-950/50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-red-300 backdrop-blur-sm shadow-[0_0_8px_rgba(239,68,68,0.3)]">
               ☠ Scout
             </div>
           </div>

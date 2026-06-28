@@ -59,6 +59,7 @@ export function buildPlayer(scene: THREE.Scene, pos: THREE.Vector3) {
 export function updatePlayer(
   dt: number,
   keys: Record<string, boolean>,
+  joystick: { x: number; y: number } | null,
   camera: THREE.PerspectiveCamera,
   playerPos: THREE.Vector3,
   playerVel: THREE.Vector3,
@@ -80,9 +81,14 @@ export function updatePlayer(
   if (keys["a"] || keys["arrowleft"]) dir.sub(right);
   if (keys["d"] || keys["arrowright"]) dir.add(right);
 
+  if (joystick && (Math.abs(joystick.x) > 0.01 || Math.abs(joystick.y) > 0.01)) {
+    dir.add(right.clone().multiplyScalar(joystick.x));
+    dir.sub(forward.clone().multiplyScalar(joystick.y));
+  }
+
   let newMoveTarget = moveTarget;
 
-  if (dir.lengthSq() > 0) {
+  if (dir.lengthSq() > 0.001) {
     newMoveTarget = null;
     dir.normalize();
     playerVel.lerp(dir.clone().multiplyScalar(speed), 0.2);
@@ -108,8 +114,8 @@ export function updatePlayer(
   player.position.set(playerPos.x, gy, playerPos.z);
 
   if (playerVel.lengthSq() > 1) {
-    const a = Math.atan2(playerVel.x, playerVel.z);
-    let diff = a - player.rotation.y;
+    const targetAngle = Math.atan2(playerVel.x, playerVel.z);
+    let diff = targetAngle - player.rotation.y;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
     player.rotation.y += diff * 0.15;
@@ -117,7 +123,11 @@ export function updatePlayer(
 
   const camTarget = new THREE.Vector3(playerPos.x, gy + 26, playerPos.z + 30);
   camera.position.lerp(camTarget, 0.06);
-  camera.lookAt(playerPos.x, gy + 3, playerPos.z - 4);
+
+  const lookAtTarget = new THREE.Vector3(playerPos.x, gy + 3, playerPos.z - 4);
+  const currentLookAt = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
+  currentLookAt.lerp(lookAtTarget, 0.1);
+  camera.lookAt(currentLookAt);
 
   return newMoveTarget;
 }

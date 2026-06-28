@@ -40,6 +40,10 @@ export function LoadingScreen({
             <div
               className="h-full rounded-full bg-amber-500/70 transition-all duration-300 ease-out"
               style={{ width: `${Math.min(100, Math.max(0, progress * 100))}%` }}
+              role="progressbar"
+              aria-valuenow={Math.round(progress * 100)}
+              aria-valuemin={0}
+              aria-valuemax={100}
             />
           </div>
         </div>
