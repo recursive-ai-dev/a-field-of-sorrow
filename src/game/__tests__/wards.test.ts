@@ -94,12 +94,14 @@ describe("Wards Logic Chains", () => {
       const scene = new THREE.Scene();
       scene.add(ward.mesh);
       const wards = [ward];
+      const survivor = createMockSurvivor({ ward });
 
-      updateWards(dt, scene, wards, [], vi.fn());
+      updateWards(dt, scene, wards, [survivor], vi.fn());
 
       expect(wards.length).toBe(0); // Ward should be removed from the list
       expect(ward.active).toBe(false); // Ward marked inactive
       expect(scene.children.includes(ward.mesh)).toBe(false); // Mesh removed from scene
+      expect(survivor.ward).toBeNull(); // Survivor link cleared
     });
   });
 });
