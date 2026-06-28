@@ -9,13 +9,21 @@ export function MenuScreen({ onStart, onLoad }: { onStart: () => void; onLoad?: 
         <h1 className="mb-4 bg-gradient-to-b from-amber-200 to-amber-500 bg-clip-text text-5xl font-black tracking-tight text-transparent drop-shadow-[0_2px_12px_rgba(180,83,9,0.5)] sm:text-6xl">
           WARD OF THE<br />FALLEN FIELD
         </h1>
-        <p className="mx-auto mb-8 max-w-md text-sm leading-relaxed text-stone-300/90">
+        <p className="mx-auto mb-6 max-w-md text-sm leading-relaxed text-stone-300/90">
           The battle is over, but the dying remain. With your enchanted staff and
           shivering spectral fireflies for light, move across the churned earth.
           Cast <span className="text-sky-300">protective wards</span> and{" "}
           <span className="text-emerald-300">healing glyphs</span> to save survivors
           before encroaching darkness and enemy scouts claim them.
         </p>
+
+        <div className="mx-auto mb-8 max-w-md rounded-xl border border-amber-500/30 bg-amber-900/20 p-4 shadow-inner">
+          <h2 className="mb-2 text-xs uppercase tracking-[0.2em] text-amber-300/80 font-bold">Objective</h2>
+          <p className="text-sm text-stone-200">
+            Save at least <span className="text-emerald-300 font-bold">50% of the survivors</span> or maintain <span className="text-amber-300 font-bold">morale above 60%</span> before dusk falls.
+          </p>
+        </div>
+
         <div className="mb-8 grid grid-cols-3 gap-3 text-left text-xs text-stone-400">
           <div className="rounded-lg border border-amber-900/40 bg-black/30 p-3">
             <div className="mb-1 text-amber-300">Move</div>
