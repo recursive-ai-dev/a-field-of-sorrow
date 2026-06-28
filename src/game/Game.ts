@@ -4,8 +4,7 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { VignetteShader } from "./shaders";
-import type { GameState, StateListener, SurvivorUI, ScoutUI } from "./types";
-import type { Survivor, Scout, Ward } from "./entities";
+import type { GameState, StateListener, SurvivorUI, ScoutUI, Survivor, Scout, Ward } from "./types";
 import { CONFIG } from "./config";
 import { buildLighting, buildTerrain, buildDetritus, buildFogPatches, buildFireflies, terrainHeight, type FogPatch } from "./scene";
 import { buildPlayer, updatePlayer, flashOrb } from "./player";
@@ -39,10 +38,12 @@ export class Game {
   private wards: Ward[] = [];
   private fogPatches: FogPatch[] = [];
   private fireflies!: THREE.Points;
+  private terrainMesh!: THREE.Mesh;
   private survivorSpatialGrid!: SpatialGrid<Survivor>;
   private scoutSpatialGrid!: SpatialGrid<Scout>;
 
   private keys: Record<string, boolean> = {};
+  private joystick: { x: number; y: number } | null = null;
   private wardCD = 0;
   private healCD = 0;
 
@@ -50,24 +51,24 @@ export class Game {
   private saved = 0;
   private lostCount = 0;
   private morale = 60;
-  private timeLeft = CONFIG.gameTime;
+  private timeLeft: number = CONFIG.gameTime;
   private dangerLevel = { value: 0 };
   private message: string | null = null;
   private messageT = 0;
+  private paused = false;
 
   private listener: StateListener | null = null;
   private raycaster = new THREE.Raycaster();
-  private groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private tmpV = new THREE.Vector3();
   private ndc = new THREE.Vector2();
   private performanceMonitor = new PerformanceMonitor();
   private lastPerformanceLog = 0;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, initialState?: GameState) {
     if (!container) throw new Error("Game container element is required");
     this.container = container;
     try {
-      this.init();
+      this.init(initialState);
     } catch (error) {
       console.error("Failed to initialize game:", error);
       this.cleanup();
@@ -77,7 +78,7 @@ export class Game {
 
   onState(cb: StateListener) { this.listener = cb; }
 
-  private init() {
+  private init(initialState?: GameState) {
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
 
@@ -99,18 +100,27 @@ export class Game {
     this.camera.position.set(0, 28, CONFIG.field * 0.7 + 26);
 
     buildLighting(this.scene);
-    buildTerrain(this.scene);
+    this.terrainMesh = buildTerrain(this.scene);
     buildDetritus(this.scene);
     this.fogPatches = buildFogPatches(this.scene);
     this.fireflies = buildFireflies(this.scene);
+
+    if (initialState) {
+      this.restoreState(initialState);
+    }
 
     const built = buildPlayer(this.scene, this.playerPos);
     this.player = built.player;
     this.staffOrb = built.staffOrb;
     this.playerLight = built.playerLight;
 
-    this.survivors = buildSurvivors(this.scene);
-    this.scouts = buildScouts(this.scene);
+    if (this.survivors.length === 0) {
+      this.survivors = buildSurvivors(this.scene);
+    }
+
+    if (this.scouts.length === 0) {
+      this.scouts = buildScouts(this.scene);
+    }
 
     this.buildSpatialGrids();
     this.buildPost();
@@ -120,6 +130,100 @@ export class Game {
 
     this.addListeners();
     this.loop();
+  }
+
+  private restoreState(state: GameState) {
+    this.status = state.status;
+    this.saved = state.saved;
+    this.lostCount = state.lost;
+    this.morale = state.morale;
+    this.timeLeft = state.timeLeft;
+    this.playerHealth = state.playerHealth;
+    this.wardCD = (1 - state.wardCooldown) * CONFIG.wardCooldown;
+    this.healCD = (1 - state.healCooldown) * CONFIG.healCooldown;
+
+    // Restore survivors if available in serialized state
+    if (state.survivors && state.survivors.length > 0) {
+      this.survivors = state.survivors.map((sUI) => {
+        const group = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: sUI.rescued ? 0x5ab07a : (sUI.life <= 0 ? 0x2a1810 : 0x8a5a3a), roughness: 0.8 });
+        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.45, 1, 4, 8), bodyMat);
+        body.rotation.z = Math.PI / 2.6;
+        body.position.y = 0.7;
+        body.castShadow = true;
+        group.add(body);
+
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.35, 10, 10),
+          new THREE.MeshStandardMaterial({ color: 0xc9a27a, roughness: 0.6 }),
+        );
+        head.position.set(0.7, 1.05, 0);
+        group.add(head);
+
+        const light = new THREE.PointLight(sUI.rescued ? 0x66ffaa : 0xffaa55, sUI.rescued ? 10 : (sUI.life <= 0 ? 0 : 6), 10, 2);
+        light.position.y = 1.5;
+        group.add(light);
+
+        const cluster = Math.floor(sUI.id / 3);
+        const cx = Math.cos(cluster * 1.7) * (20 + cluster * 12);
+        const cz = Math.sin(cluster * 2.1) * (15 + cluster * 10) - 10;
+        const x = cx + (Math.sin(sUI.id) * 7);
+        const z = cz + (Math.cos(sUI.id) * 7);
+        const y = terrainHeight(x, z);
+        group.position.set(x, y, z);
+        this.scene.add(group);
+
+        return {
+          mesh: group,
+          pos: new THREE.Vector3(x, y, z),
+          life: sUI.life,
+          rescued: sUI.rescued,
+          dead: sUI.life <= 0 && !sUI.rescued,
+          ward: null,
+          name: sUI.name,
+          cryT: Math.random() * 3,
+          light,
+          bodyMat,
+        };
+      });
+    }
+
+    if (state.scouts && state.scouts.length > 0) {
+      this.scouts = state.scouts.map((scUI) => {
+        const group = new THREE.Group();
+        const body = new THREE.Mesh(
+          new THREE.ConeGeometry(0.9, 3, 6),
+          new THREE.MeshStandardMaterial({ color: 0x401818, roughness: 0.6, emissive: 0x200000, emissiveIntensity: 0.5 }),
+        );
+        body.position.y = 1.5;
+        body.castShadow = true;
+        group.add(body);
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.45, 8, 8),
+          new THREE.MeshStandardMaterial({ color: 0x661111, emissive: 0x880000, emissiveIntensity: 1.5 }),
+        );
+        head.position.y = 3.2;
+        group.add(head);
+        const light = new THREE.PointLight(0xff2200, 12, 18, 2);
+        light.position.y = 3;
+        group.add(light);
+
+        const F = CONFIG.field;
+        const x = (Math.sin(scUI.id) * F * 0.7);
+        const z = (Math.cos(scUI.id) * F * 0.7);
+        const y = terrainHeight(x, z);
+        group.position.set(x, y, z);
+        this.scene.add(group);
+
+        return {
+          group,
+          pos: new THREE.Vector3(x, y, z),
+          vel: new THREE.Vector3(),
+          waypoint: new THREE.Vector3(),
+          light,
+        };
+      });
+    }
   }
 
   private buildSpatialGrids() {
@@ -162,8 +266,9 @@ export class Game {
     this.ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     this.ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.ndc, this.camera);
-    const hit = new THREE.Vector3();
-    if (this.raycaster.ray.intersectPlane(this.groundPlane, hit)) {
+    const intersects = this.raycaster.intersectObject(this.terrainMesh);
+    if (intersects.length > 0) {
+      const hit = intersects[0].point;
       const F = CONFIG.field;
       hit.x = THREE.MathUtils.clamp(hit.x, -F, F);
       hit.z = THREE.MathUtils.clamp(hit.z, -F, F);
@@ -182,7 +287,7 @@ export class Game {
 
   public castWard(protect: boolean) {
     if (typeof protect !== "boolean") return;
-    if (this.status !== "playing") return;
+    if (this.status !== "playing" || this.paused) return;
     if (protect && this.wardCD > 0) return;
     if (!protect && this.healCD > 0) return;
 
@@ -198,6 +303,14 @@ export class Game {
       else this.healCD = cooldownDuration;
       audio.play(protect ? "ward" : "heal");
     }
+  }
+
+  public setJoystick(v: { x: number; y: number } | null) {
+    this.joystick = v;
+  }
+
+  public setPaused(p: boolean) {
+    this.paused = p;
   }
 
   private rescue(s: Survivor) {
@@ -232,7 +345,7 @@ export class Game {
       this.timer.update(timestamp);
       const dt = Math.min(this.timer.getDelta(), 0.05);
       const t = this.timer.getElapsed();
-      if (this.status === "playing") this.update(dt);
+      if (this.status === "playing" && !this.paused) this.update(dt);
       this.updateVisuals(dt, t);
       this.composer.render();
       this.emitState();
@@ -255,7 +368,7 @@ export class Game {
     this.healCD = Math.max(0, this.healCD - dt);
 
     this.moveTarget = updatePlayer(
-      dt, this.keys, this.camera, this.playerPos, this.playerVel, this.player, this.moveTarget,
+      dt, this.keys, this.joystick, this.camera, this.playerPos, this.playerVel, this.player, this.moveTarget,
     );
 
     updateSurvivors(
@@ -266,7 +379,7 @@ export class Game {
       dt, this.scouts, this.survivorSpatialGrid, this.scoutSpatialGrid,
       this.playerPos, { value: this.playerHealth }, this.wards,
     );
-    updateWards(dt, this.scene, this.wards, this.survivors);
+    updateWards(dt, this.scene, this.wards, this.survivors, (s) => this.rescue(s));
 
     if (this.playerHealth < 1) {
       this.playerHealth = Math.min(1, this.playerHealth + CONFIG.playerRegen * dt);
@@ -284,9 +397,11 @@ export class Game {
   }
 
   private updateVisuals(dt: number, t: number) {
-    for (const f of this.fogPatches) f.mat.uniforms.uTime.value += dt;
-    (this.fireflies.material as THREE.ShaderMaterial).uniforms.uTime.value = t;
-    this.staffOrb.rotation.y += dt * 2;
+    if (!this.paused) {
+      for (const f of this.fogPatches) f.mat.uniforms.uTime.value += dt;
+      (this.fireflies.material as THREE.ShaderMaterial).uniforms.uTime.value = t;
+      this.staffOrb.rotation.y += dt * 2;
+    }
     this.vignette.uniforms.uDanger.value = this.dangerLevel.value;
     this.vignette.uniforms.uTime.value = t;
     this.bloom.strength = 0.85 + this.dangerLevel.value * 0.4;
@@ -346,7 +461,11 @@ export class Game {
 
   private cleanup() {
     try {
-      for (const ward of this.wards) this.scene.remove(ward.mesh);
+      for (const ward of this.wards) {
+        this.scene.remove(ward.mesh);
+        ward.mesh.geometry.dispose();
+        ward.mat.dispose();
+      }
       this.wards = [];
       for (const w of getWardPool()) {
         if (w.mesh.parent) this.scene.remove(w.mesh);
@@ -367,7 +486,13 @@ export class Game {
       for (const s of this.survivors) {
         this.scene.remove(s.mesh);
         s.mesh.traverse((o) => {
-          if (o instanceof THREE.Mesh) { o.geometry.dispose(); if (o.material) (o.material as THREE.Material).dispose(); }
+          if (o instanceof THREE.Mesh) {
+            o.geometry.dispose();
+            if (o.material) {
+              if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+              else o.material.dispose();
+            }
+          }
         });
         s.light.dispose();
       }
@@ -375,7 +500,13 @@ export class Game {
       for (const s of this.scouts) {
         this.scene.remove(s.group);
         s.group.traverse((o) => {
-          if (o instanceof THREE.Mesh) { o.geometry.dispose(); if (o.material) (o.material as THREE.Material).dispose(); }
+          if (o instanceof THREE.Mesh) {
+            o.geometry.dispose();
+            if (o.material) {
+              if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+              else o.material.dispose();
+            }
+          }
         });
         s.light.dispose();
       }
@@ -383,11 +514,21 @@ export class Game {
       if (this.player) {
         this.scene.remove(this.player);
         this.player.traverse((o) => {
-          if (o instanceof THREE.Mesh) { o.geometry.dispose(); if (o.material) (o.material as THREE.Material).dispose(); }
+          if (o instanceof THREE.Mesh) {
+            o.geometry.dispose();
+            if (o.material) {
+              if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+              else o.material.dispose();
+            }
+          }
         });
         this.playerLight.dispose();
       }
-      if (this.composer) this.composer.passes.forEach((p) => { if ("material" in p && p.material) (p.material as THREE.Material).dispose(); });
+      if (this.composer) {
+        this.composer.passes.forEach((p) => {
+          if (p instanceof ShaderPass && p.material) p.material.dispose();
+        });
+      }
       while (this.scene.children.length > 0) {
         const o = this.scene.children[0];
         this.scene.remove(o);

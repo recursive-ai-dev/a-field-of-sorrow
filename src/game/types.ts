@@ -1,4 +1,37 @@
+import * as THREE from "three";
+
 export type GameStatus = "menu" | "playing" | "won" | "lost";
+
+export interface Survivor {
+  mesh: THREE.Group;
+  pos: THREE.Vector3;
+  life: number;
+  rescued: boolean;
+  dead: boolean;
+  ward: Ward | null;
+  name: string;
+  cryT: number;
+  light: THREE.PointLight;
+  bodyMat: THREE.MeshStandardMaterial;
+}
+
+export interface Scout {
+  group: THREE.Group;
+  pos: THREE.Vector3;
+  vel: THREE.Vector3;
+  waypoint: THREE.Vector3;
+  light: THREE.PointLight;
+}
+
+export interface Ward {
+  mesh: THREE.Mesh;
+  mat: THREE.ShaderMaterial;
+  age: number;
+  ttl: number;
+  radius: number;
+  protect: boolean;
+  active: boolean;
+}
 
 export interface SurvivorUI {
   id: number;

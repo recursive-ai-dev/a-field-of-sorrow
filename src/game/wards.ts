@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { wardVertex, wardFragment } from "./shaders";
 import { CONFIG } from "./config";
-import type { Ward, Survivor } from "./entities";
+import type { Ward, Survivor } from "./types";
 
 let wardPool: Ward[] = [];
 
@@ -81,15 +81,18 @@ export function castWard(
     scene.add(ward.mesh);
   }
 
+  // Handle immediate effects on cast
   for (const s of survivors) {
     if (s.rescued || s.dead) continue;
     const dist = s.pos.distanceTo(playerPos);
     if (dist <= ward.radius) {
       if (protect) {
         s.ward = ward;
+        // Immediate small health boost for protection ward
         if (s.life < 0.35) s.life = 0.35;
       } else {
-        s.life = Math.min(1, s.life + CONFIG.healAmount);
+        // Immediate small boost for heal ward too
+        s.life = Math.min(1, s.life + CONFIG.healAmount * 0.2);
         if (s.life >= CONFIG.rescueThreshold) onRescue(s);
       }
     }
@@ -104,6 +107,7 @@ export function updateWards(
   scene: THREE.Scene,
   wards: Ward[],
   survivors: Survivor[],
+  onRescue: (s: Survivor) => void,
 ) {
   for (let i = wards.length - 1; i >= 0; i--) {
     const w = wards[i];
@@ -113,6 +117,20 @@ export function updateWards(
     w.mat.uniforms.uProgress.value = p;
     const fade = w.age > w.ttl - 1 ? Math.max(0, w.ttl - w.age) : 1;
     w.mat.uniforms.uIntensity.value = 1.6 * fade;
+
+    // Healing logic over time
+    if (!w.protect) {
+      for (const s of survivors) {
+        if (s.rescued || s.dead) continue;
+        const dist = s.pos.distanceTo(w.mesh.position);
+        if (dist <= w.radius) {
+          const healAmount = (CONFIG.healAmount / w.ttl) * dt;
+          s.life = Math.min(1, s.life + healAmount);
+          if (s.life >= CONFIG.rescueThreshold) onRescue(s);
+        }
+      }
+    }
+
     if (w.age >= w.ttl) {
       w.active = false;
       scene.remove(w.mesh);

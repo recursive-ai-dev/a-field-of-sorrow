@@ -8,19 +8,19 @@ export const CONFIG = {
   wardCooldown: 6,
   healCooldown: 4,
   wardDuration: 9,
-  healDuration: 2.5,
+  healDuration: 3.5,
   wardRadius: 12,
   healRadius: 9,
-  survivorDecay: 0.012,
-  scoutDrain: 0.09,
+  survivorDecay: 0.015, // Slightly increased base decay
+  scoutDrain: 0.1,    // Slightly increased scout drain
   scoutDrainRange: 16,
   wardProtectionFactor: 0.05,
-  healAmount: 0.45,
+  healAmount: 0.55,    // Increased heal amount to compensate for over-time
   rescueThreshold: 0.9,
   scoutHuntRange: 45,
   scoutDamageRange: 6,
-  scoutDamage: 0.12,
-  playerRegen: 0.01,
+  scoutDamage: 0.15,   // Slightly increased scout damage
+  playerRegen: 0.012,  // Slightly increased player regen
   winRatio: 0.5,
   winMorale: 60,
 } as const;

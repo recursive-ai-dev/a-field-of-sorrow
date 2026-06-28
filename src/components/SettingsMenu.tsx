@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { audio } from "../game/audio";
 
 interface SettingsMenuProps {
@@ -11,6 +11,13 @@ interface SettingsMenuProps {
 export function SettingsMenu({ open, onClose, onSave, onLoad }: SettingsMenuProps) {
   const [volume, setVolume] = useState(audio.volume);
   const [muted, setMuted] = useState(audio.muted);
+
+  useEffect(() => {
+    if (open) {
+      setVolume(audio.volume);
+      setMuted(audio.muted);
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -28,6 +35,7 @@ export function SettingsMenu({ open, onClose, onSave, onLoad }: SettingsMenuProp
     <div
       className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm font-serif"
       role="dialog"
+      aria-modal="true"
       aria-label="Settings menu"
     >
       <div className="w-80 rounded-xl border border-amber-800/40 bg-gradient-to-b from-stone-900 to-stone-950 p-6 shadow-2xl">
@@ -48,7 +56,7 @@ export function SettingsMenu({ open, onClose, onSave, onLoad }: SettingsMenuProp
             step={0.05}
             value={muted ? 0 : volume}
             onChange={(e) => handleVolume(parseFloat(e.target.value))}
-            className="w-full accent-amber-500"
+            className="w-full h-1.5 rounded-lg bg-stone-700 accent-amber-500 cursor-pointer appearance-none"
             aria-label="Volume slider"
           />
         </div>
@@ -56,7 +64,7 @@ export function SettingsMenu({ open, onClose, onSave, onLoad }: SettingsMenuProp
         {/* Mute toggle */}
         <button
           onClick={handleMute}
-          className="mb-6 w-full rounded-lg border border-stone-700/60 bg-stone-800/50 px-4 py-2 text-sm uppercase tracking-wider text-stone-300 transition hover:bg-stone-700/50"
+          className="mb-6 w-full rounded-lg border border-stone-700/60 bg-stone-800/50 px-4 py-2 text-sm uppercase tracking-wider text-stone-300 transition hover:bg-stone-700/50 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
         >
           {muted ? "🔇 Unmute" : "🔊 Mute"}
         </button>
@@ -66,7 +74,7 @@ export function SettingsMenu({ open, onClose, onSave, onLoad }: SettingsMenuProp
           {onSave && (
             <button
               onClick={onSave}
-              className="flex-1 rounded-lg border border-amber-700/40 bg-amber-900/20 px-3 py-2 text-xs uppercase tracking-wider text-amber-200 transition hover:bg-amber-800/30"
+              className="flex-1 rounded-lg border border-amber-700/40 bg-amber-900/20 px-3 py-2 text-xs uppercase tracking-wider text-amber-200 transition hover:bg-amber-800/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
             >
               Save
             </button>
@@ -74,7 +82,7 @@ export function SettingsMenu({ open, onClose, onSave, onLoad }: SettingsMenuProp
           {onLoad && (
             <button
               onClick={onLoad}
-              className="flex-1 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-xs uppercase tracking-wider text-blue-200 transition hover:bg-blue-800/30"
+              className="flex-1 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-xs uppercase tracking-wider text-blue-200 transition hover:bg-blue-800/30 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             >
               Load
             </button>
@@ -84,7 +92,7 @@ export function SettingsMenu({ open, onClose, onSave, onLoad }: SettingsMenuProp
         {/* Close */}
         <button
           onClick={onClose}
-          className="w-full rounded-lg border border-stone-600/50 bg-stone-800/40 px-4 py-2 text-sm uppercase tracking-wider text-stone-300 transition hover:bg-stone-700/50"
+          className="w-full rounded-lg border border-stone-600/50 bg-stone-800/40 px-4 py-2 text-sm uppercase tracking-wider text-stone-300 transition hover:bg-stone-700/50 focus:outline-none focus:ring-1 focus:ring-stone-500"
         >
           Close
         </button>

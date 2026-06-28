@@ -30,23 +30,23 @@ export function MenuScreen({ onStart, onLoad }: { onStart: () => void; onLoad?: 
             Restores life; full heal = rescue.
           </div>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           <button
             onClick={onStart}
             className="rounded-full border-2 border-amber-300/80 bg-amber-600/20 px-8 py-3 text-lg font-bold tracking-widest text-amber-100 shadow-[0_0_25px_rgba(251,191,36,0.4)] transition-all hover:scale-105 hover:bg-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-opacity-50"
             aria-label="Start a new game"
-            title="Start a new game (New Game)"
           >
             NEW GAME
           </button>
-          <button
-            onClick={onLoad}
-            className="rounded-full border-2 border-blue-300/80 bg-blue-600/20 px-8 py-3 text-lg font-bold tracking-widest text-blue-100 shadow-[0_0_25px_rgba(59,130,246,0.4)] transition-all hover:scale-105 hover:bg-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
-            aria-label="Load a saved game"
-            title="Load a saved game (Load Game)"
-          >
-            LOAD GAME
-          </button>
+          {onLoad && (
+            <button
+              onClick={onLoad}
+              className="rounded-full border-2 border-blue-300/80 bg-blue-600/20 px-8 py-3 text-lg font-bold tracking-widest text-blue-100 shadow-[0_0_25px_rgba(59,130,246,0.4)] transition-all hover:scale-105 hover:bg-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+              aria-label="Load a saved game"
+            >
+              LOAD GAME
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -63,7 +63,7 @@ export function EndScreen({ state, onRestart }: { state: GameState; onRestart: (
           : "bg-gradient-to-b from-stone-950 via-red-950/50 to-stone-950"
       }`}
     >
-      <div className="max-w-lg px-6 text-center">
+      <div className="max-w-lg px-6 text-center" role="alert">
         <p className="mb-2 text-xs uppercase tracking-[0.4em] text-stone-400">
           {won ? "Dawn breaks over the field" : "The dark has won this night"}
         </p>
@@ -86,7 +86,7 @@ export function EndScreen({ state, onRestart }: { state: GameState; onRestart: (
         </div>
         <button
           onClick={onRestart}
-          className="rounded-full border-2 border-amber-300/70 bg-amber-600/20 px-8 py-3 font-bold tracking-widest text-amber-100 transition-all hover:scale-105 hover:bg-amber-500/30"
+          className="rounded-full border-2 border-amber-300/70 bg-amber-600/20 px-8 py-3 font-bold tracking-widest text-amber-100 transition-all hover:scale-105 hover:bg-amber-500/30 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-opacity-50"
         >
           RIDE OUT AGAIN
         </button>

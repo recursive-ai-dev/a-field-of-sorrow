@@ -34,7 +34,7 @@ export function terrainHeight(x: number, z: number): number {
   return y;
 }
 
-export function buildTerrain(scene: THREE.Scene) {
+export function buildTerrain(scene: THREE.Scene): THREE.Mesh {
   const F = CONFIG.field;
   const geo = new THREE.PlaneGeometry(F * 2.4, F * 2.4, 140, 140);
   geo.rotateX(-Math.PI / 2);
@@ -64,6 +64,8 @@ export function buildTerrain(scene: THREE.Scene) {
     c.renderOrder = 1;
     scene.add(c);
   }
+
+  return ground;
 }
 
 export function buildDetritus(scene: THREE.Scene) {
@@ -211,5 +213,3 @@ export function buildFireflies(scene: THREE.Scene): THREE.Points {
   scene.add(points);
   return points;
 }
-
-

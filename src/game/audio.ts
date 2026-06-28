@@ -12,7 +12,10 @@ class AudioManager {
   get muted() { return this._muted; }
 
   async init() {
-    if (this.loaded) return;
+    if (this.loaded) {
+      this.resume();
+      return;
+    }
     try {
       this.ctx = new AudioContext();
       this.masterGain = this.ctx.createGain();
@@ -23,6 +26,12 @@ class AudioManager {
       this.loaded = true;
     } catch (e) {
       console.warn("Audio unavailable:", e);
+    }
+  }
+
+  private resume() {
+    if (this.ctx && this.ctx.state === "suspended") {
+      this.ctx.resume().catch(e => console.warn("Failed to resume AudioContext:", e));
     }
   }
 
@@ -37,6 +46,8 @@ class AudioManager {
       victory: [800, 0.8],
       defeat: [100, 0.8],
     };
+
+    if (!this.ctx) return;
 
     for (const [name, [freq, dur]] of Object.entries(sounds)) {
       const buffer = this.generateTone(freq, dur);
@@ -60,7 +71,7 @@ class AudioManager {
 
   play(name: SoundName) {
     if (!this.ctx || !this.masterGain || this._muted) return;
-    if (this.ctx.state === "suspended") this.ctx.resume();
+    this.resume();
     const buffer = this.buffers.get(name);
     if (!buffer) return;
     const src = this.ctx.createBufferSource();

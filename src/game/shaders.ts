@@ -10,7 +10,7 @@ export const wardVertex = /* glsl */ `
 
 // Pulsing protective glyph ward — concentric rings + rotating rune ticks
 export const wardFragment = /* glsl */ `
-  precision highp float;
+  precision mediump float;
   varying vec2 vUv;
   uniform float uTime;
   uniform float uProgress;
@@ -52,7 +52,7 @@ export const wardFragment = /* glsl */ `
 export const fogVertex = wardVertex;
 
 export const fogFragment = /* glsl */ `
-  precision highp float;
+  precision mediump float;
   varying vec2 vUv;
   uniform float uTime;
   uniform vec3  uColor;
