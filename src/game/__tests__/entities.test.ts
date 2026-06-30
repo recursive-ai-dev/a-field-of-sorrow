@@ -140,7 +140,9 @@ describe("Entities Logic Chains", () => {
         { updateItem: () => {} },
         new THREE.Vector3(1000, 0, 0), // Player far away
         { value: 1.0 },
-        []
+        [],
+        100,
+        150
       );
 
       // Scout should move towards survivor (x > 0)
@@ -167,7 +169,9 @@ describe("Entities Logic Chains", () => {
         { updateItem: () => {} },
         new THREE.Vector3(1000, 0, 0),
         { value: 1.0 },
-        [ward]
+        [ward],
+        100,
+        150
       );
 
       // Scout should move away from the ward (x < 0)
@@ -187,7 +191,9 @@ describe("Entities Logic Chains", () => {
         { updateItem: () => {} },
         playerPos,
         playerHealth,
-        []
+        [],
+        100,
+        150
       );
 
       expect(playerHealth.value).toBe(1.0 - CONFIG.scoutDamage * dt);
@@ -207,7 +213,9 @@ describe("Entities Logic Chains", () => {
         { updateItem: () => {} },
         playerPos,
         playerHealth,
-        [ward]
+        [ward],
+        100,
+        150
       );
 
       expect(playerHealth.value).toBe(1.0);

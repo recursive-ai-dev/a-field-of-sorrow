@@ -55,6 +55,8 @@ export class Game {
   private dangerLevel = { value: 0 };
   private message: string | null = null;
   private messageT = 0;
+  private speedBoostTimer = 0;
+  private darkPulseTimer = 0;
   private paused = false;
 
   private listener: StateListener | null = null;
@@ -316,6 +318,14 @@ export class Game {
   private rescue(s: Survivor) {
     if (s.rescued || s.dead) return;
     s.rescued = true;
+    this.speedBoostTimer = 3.0;
+    this.wardCD = Math.max(0, this.wardCD - 2.0);
+    this.healCD = Math.max(0, this.healCD - 2.0);
+    for (const sc of this.scouts) {
+      if (sc.pos.distanceTo(s.pos) < 20) {
+        sc.vel.copy(sc.pos).sub(s.pos).setY(0).normalize().multiplyScalar(40);
+      }
+    }
     this.saved++;
     this.morale = Math.min(100, this.morale + 6 + Math.round(s.life * 4));
     this.setMessage(`${s.name} rescued! The light shielded them.`);
@@ -329,6 +339,7 @@ export class Game {
   private killSurvivor = (s: Survivor) => {
     if (s.rescued || s.dead) return;
     s.dead = true;
+    this.darkPulseTimer = 2.0;
     this.lostCount++;
     this.morale = Math.max(0, this.morale - 9);
     this.setMessage(`${s.name} was lost to the dark...`);
@@ -366,9 +377,11 @@ export class Game {
     this.timeLeft -= dt;
     this.wardCD = Math.max(0, this.wardCD - dt);
     this.healCD = Math.max(0, this.healCD - dt);
+    this.speedBoostTimer = Math.max(0, this.speedBoostTimer - dt);
+    this.darkPulseTimer = Math.max(0, this.darkPulseTimer - dt);
 
     this.moveTarget = updatePlayer(
-      dt, this.keys, this.joystick, this.camera, this.playerPos, this.playerVel, this.player, this.moveTarget,
+      dt, this.keys, this.joystick, this.camera, this.playerPos, this.playerVel, this.player, this.moveTarget, this.speedBoostTimer
     );
 
     updateSurvivors(
@@ -377,7 +390,7 @@ export class Game {
     );
     updateScouts(
       dt, this.scouts, this.survivorSpatialGrid, this.scoutSpatialGrid,
-      this.playerPos, { value: this.playerHealth }, this.wards,
+      this.playerPos, { value: this.playerHealth }, this.wards, this.timeLeft, CONFIG.gameTime
     );
     updateWards(dt, this.scene, this.wards, this.survivors, (s) => this.rescue(s));
 
@@ -404,6 +417,7 @@ export class Game {
     }
     this.vignette.uniforms.uDanger.value = this.dangerLevel.value;
     this.vignette.uniforms.uTime.value = t;
+    this.vignette.uniforms.uDarkPulse.value = this.darkPulseTimer > 0 ? this.darkPulseTimer / 2.0 : 0;
     this.bloom.strength = 0.85 + this.dangerLevel.value * 0.4;
   }
 

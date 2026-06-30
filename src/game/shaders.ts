@@ -93,6 +93,7 @@ export const VignetteShader = {
     tDiffuse: { value: null as THREE.Texture | null },
     uDanger: { value: 0 },
     uTime: { value: 0 },
+    uDarkPulse: { value: 0 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -112,6 +113,7 @@ export const VignetteShader = {
       float pulse = 0.5 + 0.5 * sin(uTime * 6.0);
       float edge = smoothstep(0.35, 0.75, d);
       c.rgb = mix(c.rgb, vec3(0.5, 0.05, 0.04), edge * uDanger * (0.4 + 0.3 * pulse));
+      c.rgb = mix(c.rgb, vec3(0.0), edge * uDarkPulse);
       gl_FragColor = c;
     }
   `,
