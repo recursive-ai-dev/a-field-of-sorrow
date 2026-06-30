@@ -65,8 +65,10 @@ export function updatePlayer(
   playerVel: THREE.Vector3,
   player: THREE.Group,
   moveTarget: THREE.Vector3 | null,
+  speedBoostTimer: number = 0
 ): THREE.Vector3 | null {
-  const speed = CONFIG.playerSpeed;
+  let speed = CONFIG.playerSpeed;
+  if (speedBoostTimer > 0) speed *= 1.4;
 
   const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
   forward.y = 0;

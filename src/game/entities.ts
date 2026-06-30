@@ -140,8 +140,11 @@ export function updateScouts(
   playerPos: THREE.Vector3,
   playerHealth: { value: number },
   wards: Ward[],
+  timeLeft: number,
+  gameTime: number
 ) {
-  const speed = CONFIG.scoutSpeed;
+  const difficultyMultiplier = 1 + 0.5 * (1 - Math.max(0, timeLeft) / gameTime);
+  const speed = CONFIG.scoutSpeed * difficultyMultiplier;
   for (const sc of scouts) {
     scoutSpatialGrid.updateItem(sc);
 
